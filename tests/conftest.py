@@ -4,6 +4,7 @@ from app.db import db
 from app import create_app
 from dotenv import load_dotenv
 from app.models.order import Order
+from app.models.order_item import OrderItem
 from flask.signals import request_finished
 
 load_dotenv()
@@ -53,3 +54,19 @@ def two_orders(app):
         db.session.add_all(orders)
         db.session.commit()
         return [o.to_dict() for o in orders]
+
+
+@pytest.fixture
+def one_order_with_items(app):
+    with app.app_context():
+        order = Order(user_id=10)
+        db.session.add(order)
+        db.session.flush()
+
+        items = [
+            OrderItem(order_id=order.id, product_id="A1", product_name="Widget", product_price=9.99, quantity=2),
+            OrderItem(order_id=order.id, product_id="B2", product_name="Gadget", product_price=24.99, quantity=1),
+        ]
+        db.session.add_all(items)
+        db.session.commit()
+        return order.to_dict()

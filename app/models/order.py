@@ -7,10 +7,13 @@ class Order(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int]
 
+    items = db.relationship("OrderItem", back_populates="order")
+
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "items": [item.to_dict() for item in self.items]
         }
 
     @classmethod

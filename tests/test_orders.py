@@ -10,6 +10,7 @@ def test_create_order_returns_order_data(client):
     body = response.get_json()
     assert body["user_id"] == 42
     assert "id" in body
+    assert body["items"] == []
 
 
 def test_create_order_missing_user_id_returns_400(client):
@@ -51,6 +52,7 @@ def test_get_single_order_returns_correct_data(client, one_order):
     body = response.get_json()
     assert body["id"] == one_order["id"]
     assert body["user_id"] == one_order["user_id"]
+    assert body["items"] == []
 
 
 def test_get_single_order_not_found_returns_404(client):
@@ -107,3 +109,40 @@ def test_delete_order_not_found_returns_404(client):
 def test_delete_order_invalid_id_returns_400(client):
     response = client.delete("/orders/banana")
     assert response.status_code == 400
+
+
+# ─── Order items in responses ──────────────────────────────────────────────────
+
+def test_get_single_order_includes_items_key(client, one_order_with_items):
+    response = client.get(f"/orders/{one_order_with_items['id']}")
+    body = response.get_json()
+    assert "items" in body
+
+
+def test_get_single_order_returns_correct_item_count(client, one_order_with_items):
+    response = client.get(f"/orders/{one_order_with_items['id']}")
+    body = response.get_json()
+    assert len(body["items"]) == 2
+
+
+def test_get_single_order_returns_correct_item_fields(client, one_order_with_items):
+    response = client.get(f"/orders/{one_order_with_items['id']}")
+    items = response.get_json()["items"]
+    for item in items:
+        assert "product_id" in item
+        assert "product_name" in item
+        assert "product_price" in item
+        assert "quantity" in item
+
+
+def test_get_single_order_returns_correct_item_data(client, one_order_with_items):
+    response = client.get(f"/orders/{one_order_with_items['id']}")
+    items = response.get_json()["items"]
+    product_names = {item["product_name"] for item in items}
+    assert product_names == {"Widget", "Gadget"}
+
+
+def test_order_without_items_returns_empty_list(client, one_order):
+    response = client.get(f"/orders/{one_order['id']}")
+    body = response.get_json()
+    assert body["items"] == []
