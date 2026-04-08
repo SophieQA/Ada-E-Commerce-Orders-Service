@@ -19,16 +19,6 @@ def validate_model(cls, id):
 
 
 def create_model(cls, model_data):
-    if "email" in model_data:
-        existing = db.session.execute(
-            db.select(cls).where(cls.email == model_data["email"])
-        ).scalar()
-
-        if existing:
-            response = {
-                "message": f"An account with email '{model_data['email']}' already exists."}
-            abort(make_response(response, 409))
-
     try:
         new_model = cls.from_dict(model_data)
     except Exception as e:
