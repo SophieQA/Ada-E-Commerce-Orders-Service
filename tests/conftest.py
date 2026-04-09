@@ -3,14 +3,18 @@ import boto3
 import pytest
 from app.db import db
 from app import create_app
-from dotenv import load_dotenv
 from moto import mock_aws
 from app.models.order import Order
 from app.models.line_item import LineItem
 from flask.signals import request_finished
 
-
-load_dotenv()
+@pytest.fixture
+def aws_credentials():
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
 
 
 @pytest.fixture
@@ -40,7 +44,7 @@ def client(app):
 
 
 @pytest.fixture
-def sns_mock(app):
+def sns_mock(app, aws_credentials):
     """
     Spins up a moto-mocked SNS FIFO topic and an SQS FIFO queue subscribed to
     it so that every SNS publish during a test is captured and inspectable.
@@ -49,16 +53,10 @@ def sns_mock(app):
     Sets the ARN env var that create_order reads, and tears it down after each
     test.
     """
-    os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
-    os.environ.setdefault("AWS_ACCESS_KEY_ID", "testing")
-    os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "testing")
-    os.environ.setdefault("AWS_SECURITY_TOKEN", "testing")
-    os.environ.setdefault("AWS_SESSION_TOKEN", "testing")
 
     with mock_aws():
-        region = "us-east-1"
-        sns_client = boto3.client("sns", region_name=region)
-        sqs_client = boto3.client("sqs", region_name=region)
+        sns_client = boto3.client("sns", region_name=os.environ["AWS_DEFAULT_REGION"])
+        sqs_client = boto3.client("sqs", region_name=os.environ["AWS_DEFAULT_REGION"])
 
         topic_resp = sns_client.create_topic(
             Name="order-placed.fifo",
