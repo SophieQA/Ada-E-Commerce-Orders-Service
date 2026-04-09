@@ -8,7 +8,7 @@ class Order(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int]
 
-    items = db.relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    items = db.relationship("LineItem", back_populates="order", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {

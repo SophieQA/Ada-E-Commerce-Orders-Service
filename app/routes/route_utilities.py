@@ -2,7 +2,7 @@ import os
 import json
 import boto3
 from ..db import db
-from ..models.order_item import OrderItem
+from ..models.line_item import LineItem
 from flask import abort, make_response, Response
 
 
@@ -31,7 +31,7 @@ def create_order(cls, model_data):
         line_items = []
         for item in model_data.get("items", []):
             item["order_id"] = new_order.id
-            line_item = OrderItem.from_dict(item)
+            line_item = LineItem.from_dict(item)
             line_items.append(line_item)
 
         new_order.items = line_items

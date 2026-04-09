@@ -6,7 +6,7 @@ from app import create_app
 from dotenv import load_dotenv
 from moto import mock_aws
 from app.models.order import Order
-from app.models.line_item import OrderItem
+from app.models.line_item import LineItem
 from flask.signals import request_finished
 
 load_dotenv()
@@ -102,9 +102,9 @@ def one_order_with_items(app):
     db.session.flush()
 
     items = [
-        OrderItem(order_id=order.id, product_id="A1",
+        LineItem(order_id=order.id, product_id="A1",
                   product_name="Widget", product_price=9.99, quantity=2),
-        OrderItem(order_id=order.id, product_id="B2",
+        LineItem(order_id=order.id, product_id="B2",
                   product_name="Gadget", product_price=24.99, quantity=1),
     ]
     db.session.add_all(items)
@@ -121,13 +121,13 @@ def two_orders_with_items(app):
     db.session.flush()
 
     items = [
-        OrderItem(order_id=order1.id, product_id="A1",
+        LineItem(order_id=order1.id, product_id="A1",
                   product_name="Widget", product_price=9.99, quantity=2),
-        OrderItem(order_id=order1.id, product_id="B2",
+        LineItem(order_id=order1.id, product_id="B2",
                   product_name="Gadget", product_price=24.99, quantity=1),
-        OrderItem(order_id=order2.id, product_id="C3",
+        LineItem(order_id=order2.id, product_id="C3",
                   product_name="Doohickey", product_price=4.99, quantity=3),
-        OrderItem(order_id=order2.id, product_id="D4",
+        LineItem(order_id=order2.id, product_id="D4",
                   product_name="Thingamajig", product_price=14.49, quantity=1),
     ]
     db.session.add_all(items)

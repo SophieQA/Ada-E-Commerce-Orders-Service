@@ -2,7 +2,7 @@ from app.db import db
 from app import create_app
 from dotenv import load_dotenv
 from app.models.order import Order
-from app.models.order_item import OrderItem
+from app.models.line_item import LineItem
 
 load_dotenv()
 
@@ -20,42 +20,42 @@ def seed_orders():
     db.session.flush()
 
     items = [
-        OrderItem(
+        LineItem(
             order_id=orders[0].id,
             product_id="S001",
             product_name="Pastel Gel Pen Set",
             product_price=8.99,
             quantity=2,
         ),
-        OrderItem(
+        LineItem(
             order_id=orders[0].id,
             product_id="S002",
             product_name="Floral Washi Tape Bundle",
             product_price=12.49,
             quantity=3,
         ),
-        OrderItem(
+        LineItem(
             order_id=orders[1].id,
             product_id="S003",
             product_name="Kawaii Memo Pad",
             product_price=5.99,
             quantity=4,
         ),
-        OrderItem(
+        LineItem(
             order_id=orders[1].id,
             product_id="S004",
             product_name="Mushroom Sticky Notes",
             product_price=4.49,
             quantity=2,
         ),
-        OrderItem(
+        LineItem(
             order_id=orders[2].id,
             product_id="S005",
             product_name="Holographic Sticker Sheet",
             product_price=3.99,
             quantity=5,
         ),
-        OrderItem(
+        LineItem(
             order_id=orders[2].id,
             product_id="S001",
             product_name="Pastel Gel Pen Set",

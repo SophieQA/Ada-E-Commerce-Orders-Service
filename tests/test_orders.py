@@ -1,7 +1,7 @@
 import json
 from app.db import db
 from app.models.order import Order
-from app.models.line_item import OrderItem
+from app.models.line_item import LineItem
 
 
 # ─── POST /orders/ ────────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ def test_delete_order_returns_204_and_removes_order_and_items(client, one_order_
     response = client.delete(f"/orders/{order_id}")
     order = db.session.get(Order, order_id)
     orphaned_items = db.session.scalars(
-        db.select(OrderItem).where(OrderItem.order_id == order_id)
+        db.select(LineItem).where(LineItem.order_id == order_id)
     ).all()
 
     # Assert
