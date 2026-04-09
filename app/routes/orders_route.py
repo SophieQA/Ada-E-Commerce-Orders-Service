@@ -1,16 +1,16 @@
 from ..db import db
 from ..models.order import Order
 from flask import Blueprint, request, Response
-from .route_utilities import create_model, get_models_with_filters, validate_model, update_model
+from .route_utilities import create_order, get_models_with_filters, validate_model, update_model
 
 bp = Blueprint("orders_blueprint", __name__, url_prefix="/orders")
 
 
 @bp.post("/")
-def create_order():
+def post_order():
     request_body = request.get_json()
 
-    return create_model(Order, request_body)
+    return create_order(Order, request_body)
 
 
 @bp.get("/")

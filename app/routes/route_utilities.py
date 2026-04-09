@@ -18,17 +18,17 @@ def validate_model(cls, id):
     return model
 
 
-def create_model(cls, model_data):
+def create_order(cls, model_data):
     try:
-        new_model = cls.from_dict(model_data)
+        new_order = cls.from_dict(model_data)
     except Exception as e:
         response = {"message": f"Invalid request: missing {e.args[0]}"}
         abort(make_response(response, 400))
 
-    db.session.add(new_model)
+    db.session.add(new_order)
     db.session.commit()
 
-    return new_model.to_dict(), 201
+    return new_order.to_dict(), 201
 
 
 def get_models_with_filters(cls, filters=None):
