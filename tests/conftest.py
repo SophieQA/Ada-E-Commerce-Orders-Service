@@ -6,7 +6,7 @@ from app import create_app
 from dotenv import load_dotenv
 from moto import mock_aws
 from app.models.order import Order
-from app.models.order_item import OrderItem
+from app.models.line_item import OrderItem
 from flask.signals import request_finished
 
 load_dotenv()
