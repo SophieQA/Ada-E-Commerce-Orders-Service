@@ -3,8 +3,8 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-class OrderItem(db.Model):
-    __tablename__ = "order_item"
+class LineItem(db.Model):
+    __tablename__ = "line_item"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("order.id"))

@@ -1,7 +1,7 @@
 from flask import Flask
 from .db import db, migrate
 from .models.order import Order
-from .models.order_item import OrderItem
+from .models.line_item import LineItem
 from .routes.orders_route import bp as orders_bp
 
 import os

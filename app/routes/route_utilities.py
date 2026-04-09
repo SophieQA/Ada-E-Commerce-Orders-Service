@@ -1,4 +1,5 @@
 from ..db import db
+from ..models.line_item import LineItem
 from flask import abort, make_response, Response
 
 
@@ -21,6 +22,14 @@ def validate_model(cls, id):
 def create_order(cls, model_data):
     try:
         new_order = cls.from_dict(model_data)
+        line_items = []
+        for item in model_data.get("items", []):
+            item["order_id"] = new_order.id
+            line_item = LineItem.from_dict(item)
+            line_items.append(line_item)
+
+        new_order.items = line_items
+
     except Exception as e:
         response = {"message": f"Invalid request: missing {e.args[0]}"}
         abort(make_response(response, 400))
