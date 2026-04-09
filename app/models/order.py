@@ -1,3 +1,4 @@
+import datetime
 from ..db import db
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -13,7 +14,7 @@ class Order(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "items": [item.to_dict() for item in self.items]
+            "items": [item.to_dict() for item in self.items],
         }
 
     @classmethod

@@ -1,4 +1,8 @@
+import os
+import json
+import boto3
 from ..db import db
+from ..models.order_item import OrderItem
 from flask import abort, make_response, Response
 
 
@@ -18,17 +22,39 @@ def validate_model(cls, id):
     return model
 
 
-def create_model(cls, model_data):
+def create_order(cls, model_data):
+    sns = boto3.resource('sns')
+    order_placed_topic = sns.Topic(os.environ.get("ARN"))
+
     try:
-        new_model = cls.from_dict(model_data)
+        new_order = cls.from_dict(model_data)
+        line_items = []
+        for item in model_data.get("items", []):
+            item["order_id"] = new_order.id
+            line_item = OrderItem.from_dict(item)
+            line_items.append(line_item)
+
+        new_order.items = line_items
+
     except Exception as e:
         response = {"message": f"Invalid request: missing {e.args[0]}"}
         abort(make_response(response, 400))
 
-    db.session.add(new_model)
+    db.session.add(new_order)
     db.session.commit()
 
-    return new_model.to_dict(), 201
+    message = {
+        "event-type": "order.placed",
+        "payload": new_order.to_dict()
+    }
+
+    order_placed_topic.publish(
+        Message=json.dumps(message),
+        MessageGroupId="orders",
+        MessageDeduplicationId=str(new_order.id)
+    )
+
+    return new_order.to_dict(), 201
 
 
 def get_models_with_filters(cls, filters=None):
