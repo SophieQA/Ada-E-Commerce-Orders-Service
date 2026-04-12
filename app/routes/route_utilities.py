@@ -44,7 +44,7 @@ def create_order(cls, model_data):
     db.session.commit()
 
     message = {
-        "event-type": "order.placed",
+        "event_type": "order.placed",
         "payload": new_order.to_dict()
     }
 
