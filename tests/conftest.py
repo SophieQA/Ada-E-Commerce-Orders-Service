@@ -20,7 +20,7 @@ def aws_credentials():
     os.environ["AWS_SESSION_TOKEN"] = "testing"
 
 @pytest.fixture
-def app():
+def app(mock_aws_context):
     test_config = {
         "TESTING": True,
         "SQLALCHEMY_DATABASE_URI": os.environ.get('SQLALCHEMY_TEST_DATABASE_URI')
@@ -39,6 +39,10 @@ def app():
     with app.app_context():
         db.drop_all()
 
+@pytest.fixture
+def mock_aws_context(aws_credentials):
+    with mock_aws():
+        yield
 
 @pytest.fixture
 def client(app):
@@ -46,54 +50,48 @@ def client(app):
 
 
 @pytest.fixture
-def sns_mock(app, aws_credentials):
+def sns_mock(app):
     """
-    Spins up a moto-mocked SNS FIFO topic and an SQS FIFO queue subscribed to
+    Creates a moto-mocked SNS FIFO topic and an SQS FIFO queue subscribed to
     it so that every SNS publish during a test is captured and inspectable.
-
-    Sets the ARN env var that create_order reads, and tears it down after each
-    test.
+    Relies on mock_aws_context (via app) already being active.
     """
+    sns_client = boto3.client("sns", region_name=os.environ["AWS_DEFAULT_REGION"])
+    sqs_client = boto3.client("sqs", region_name=os.environ["AWS_DEFAULT_REGION"])
 
-    with mock_aws():
-        region = "us-east-1"
-        sns_client = boto3.client("sns", region_name=os.environ["AWS_DEFAULT_REGION"])
-        sqs_client = boto3.client("sqs", region_name=os.environ["AWS_DEFAULT_REGION"])
+    topic_resp = sns_client.create_topic(
+        Name="order-placed.fifo",
+        Attributes={
+            "FifoTopic": "true",
+            "ContentBasedDeduplication": "false",
+        },
+    )
+    topic_arn = topic_resp["TopicArn"]
 
-        topic_resp = sns_client.create_topic(
-            Name="order-placed.fifo",
-            Attributes={
-                "FifoTopic": "true",
-                "ContentBasedDeduplication": "false",
-            },
-        )
-        topic_arn = topic_resp["TopicArn"]
+    queue_resp = sqs_client.create_queue(
+        QueueName="test-orders.fifo",
+        Attributes={
+            "FifoQueue": "true",
+            "ContentBasedDeduplication": "true",
+        },
+    )
+    queue_url = queue_resp["QueueUrl"]
+    queue_arn = sqs_client.get_queue_attributes(
+        QueueUrl=queue_url, AttributeNames=["QueueArn"]
+    )["Attributes"]["QueueArn"]
 
-        queue_resp = sqs_client.create_queue(
-            QueueName="test-orders.fifo",
-            Attributes={
-                "FifoQueue": "true",
-                "ContentBasedDeduplication": "true",
-            },
-        )
-        queue_url = queue_resp["QueueUrl"]
-        queue_arn = sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
+    sns_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
 
-        sns_client.subscribe(TopicArn=topic_arn,
-                             Protocol="sqs", Endpoint=queue_arn)
+    os.environ["ARN"] = topic_arn
 
-        os.environ["ARN"] = topic_arn
+    yield {
+        "sns_client": sns_client,
+        "sqs_client": sqs_client,
+        "topic_arn": topic_arn,
+        "queue_url": queue_url,
+    }
 
-        yield {
-            "sns_client": sns_client,
-            "sqs_client": sqs_client,
-            "topic_arn": topic_arn,
-            "queue_url": queue_url,
-        }
-
-        os.environ.pop("ARN", None)
+    os.environ.pop("ARN", None)
 
 
 @pytest.fixture
