@@ -5,11 +5,14 @@ from app.models.order import Order
 from app.models.line_item import LineItem
 
 SAMPLE_ITEMS = [
-    {"product_id": "P001", "product_name": "Test Widget", "product_price": 9.99, "quantity": 2},
-    {"product_id": "P002", "product_name": "Test Gadget", "product_price": 4.49, "quantity": 3},
+    {"product_id": "P001", "product_name": "Test Widget",
+        "product_price": 9.99, "quantity": 2},
+    {"product_id": "P002", "product_name": "Test Gadget",
+        "product_price": 4.49, "quantity": 3},
 ]
 
 # ─── POST /orders/ ────────────────────────────────────────────────────────────
+
 
 def test_create_order_returns_201_and_persists(client):
     # Act
@@ -44,17 +47,20 @@ def test_create_order_missing_user_id_returns_400(client):
 
 def test_create_order_with_items_returns_201_and_persists(client):
     # Act
-    response = client.post("/orders/", json={"user_id": 1, "items": SAMPLE_ITEMS})
+    response = client.post(
+        "/orders/", json={"user_id": 1, "items": SAMPLE_ITEMS})
     body = response.get_json()
     order = db.session.get(Order, body["id"])
 
     # Assert
     assert response.status_code == 201
     assert len(body["items"]) == 2
-    assert {item["product_name"] for item in body["items"]} == {"Test Widget", "Test Gadget"}
+    assert {item["product_name"]
+            for item in body["items"]} == {"Test Widget", "Test Gadget"}
     assert order is not None
     assert len(order.items) == 2
-    assert {item.product_name for item in order.items} == {"Test Widget", "Test Gadget"}
+    assert {item.product_name for item in order.items} == {
+        "Test Widget", "Test Gadget"}
 
 
 # ─── GET /orders/ ─────────────────────────────────────────────────────────────
@@ -191,60 +197,3 @@ def test_delete_order_invalid_id_returns_400(client):
 
     # Assert
     assert response.status_code == 400
-
-
-# ─── Helpers ──────────────────────────────────────────────────────────────────
-
-def receive_sns_message(sns_mock):
-    """Pull one message off the test SQS queue and decode the SNS envelope."""
-    sqs_client = sns_mock["sqs_client"]
-    queue_url = sns_mock["queue_url"]
-    resp = sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
-    assert "Messages" in resp, "No SNS message was published to the topic."
-    envelope = json.loads(resp["Messages"][0]["Body"])
-    return json.loads(envelope["Message"])
-
-
-
-
-# ─── SNS publishing ───────────────────────────────────────────────────────────
-@pytest.mark.skip(reason="Requires SNS Implementation")
-def test_create_order_publishes_sns_message_with_correct_event_type(client, sns_mock):
-    # Act
-    client.post("/orders/", json={"user_id": 1})
-    message = receive_sns_message(sns_mock)
-
-    # Assert
-    assert message["event-type"] == "order.placed"
-
-@pytest.mark.skip(reason="Requires SNS Implementation")
-def test_create_order_sns_payload_matches_response(client, sns_mock):
-    # Act
-    response = client.post("/orders/", json={"user_id": 42})
-    body = response.get_json()
-    message = receive_sns_message(sns_mock)
-
-    # Assert
-    assert message["payload"]["user_id"] == 42
-    assert message["payload"]["id"] == body["id"]
-
-@pytest.mark.skip(reason="Requires SNS Implementation")
-def test_create_order_missing_user_id_does_not_publish_sns(client, sns_mock):
-    # Act
-    client.post("/orders/", json={})
-    sqs_resp = sns_mock["sqs_client"].receive_message(
-        QueueUrl=sns_mock["queue_url"], MaxNumberOfMessages=1
-    )
-
-    # Assert
-    assert "Messages" not in sqs_resp
-
-@pytest.mark.skip(reason="Requires SNS Implementation")
-def test_create_order_with_items_sns_payload_includes_items(client, sns_mock):
-    # Act
-    client.post("/orders/", json={"user_id": 1, "items": SAMPLE_ITEMS})
-    message = receive_sns_message(sns_mock)
-
-    # Assert
-    assert message["event-type"] == "order.placed"
-    assert {item["product_name"] for item in message["payload"]["items"]} == {"Test Widget", "Test Gadget"}
