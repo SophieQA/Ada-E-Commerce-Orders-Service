@@ -84,6 +84,53 @@ def test_get_all_orders_returns_correct_data(client, two_orders_with_items):
     # Assert
     assert {o["user_id"] for o in body} == {1, 2}
 
+# ─── GET /orders/?user_id=<id> ────────────────────────────────────────────────
+
+def test_get_orders_by_user_id_returns_200(client, two_orders_with_items):
+    response = client.get("/orders/", query_string={"user_id": 1})
+
+    assert response.status_code == 200
+
+
+def test_get_orders_by_user_id_returns_only_matching_orders(client, two_orders_with_items):
+    response = client.get("/orders/", query_string={"user_id": 1})
+    body = response.get_json()
+
+    assert len(body) == 1
+    assert body[0]["user_id"] == 1
+
+
+def test_get_orders_by_user_id_excludes_other_users_orders(client, two_orders_with_items):
+    response = client.get("/orders/", query_string={"user_id": 1})
+    body = response.get_json()
+
+    assert all(order["user_id"] == 1 for order in body)
+
+
+def test_get_orders_by_user_id_returns_empty_list_when_no_match(client, two_orders_with_items):
+    response = client.get("/orders/", query_string={"user_id": 999})
+
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+
+def test_get_orders_by_user_id_returns_all_orders_for_that_user(client, app):
+    # Arrange: two orders for user 5, one for user 7
+    order1 = Order(user_id=5)
+    order2 = Order(user_id=5)
+    order3 = Order(user_id=7)
+    db.session.add_all([order1, order2, order3])
+    db.session.commit()
+
+    # Act
+    response = client.get("/orders/", query_string={"user_id": 5})
+    body = response.get_json()
+
+    # Assert
+    assert len(body) == 2
+    assert all(order["user_id"] == 5 for order in body)
+
+
 
 # ─── GET /orders/<id> ─────────────────────────────────────────────────────────
 
