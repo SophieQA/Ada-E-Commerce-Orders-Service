@@ -39,7 +39,9 @@ def get_models_with_filters(cls, filters=None):
 
     if filters:
         for attribute, value in filters.items():
-            if hasattr(cls, attribute):
+            if attribute == "user_id":
+                query = query.where(getattr(cls, attribute) == value)
+            elif hasattr(cls, attribute):
                 query = query.where(
                     getattr(cls, attribute).ilike(f"%{value}%"))
 
