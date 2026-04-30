@@ -1,21 +1,33 @@
-from .db import db, migrate
 from flask import Flask
+from .db import db, migrate
+from flask_cors import CORS
+from .models.order import Order
+from .models.line_item import LineItem
+from .routes.orders_route import bp as orders_bp
 
 import os
 
-def create_app():
-  app = Flask(__name__)
 
-  app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-  app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI')
+def create_app(config=None):
+    app = Flask(__name__)
+    CORS(app)
 
-  db.init_app(app)
-  migrate.init_app(app, db)
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+        'SQLALCHEMY_DATABASE_URI')
 
-  @app.get('/')
-  def index():
-    return {
-      "status": "ok"
-    }
+    if config:
+        app.config.update(config)
 
-  return app
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    app.register_blueprint(orders_bp)
+
+    @app.get('/')
+    def index():
+        return {
+            "status": "ok"
+        }
+
+    return app
