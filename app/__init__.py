@@ -23,7 +23,7 @@ def create_app(config=None):
     DB_USER = os.environ.get('DATABASE_USER')
 
     secrets_client = boto3.client('secretsmanager')
-    secret = secrets_client.get_secret_value(SecretId=os.environ.get('DB_SECRET_ARN'))
+    secret = secrets_client.get_secret_value(SecretId=os.environ.get('DATABASE_SECRET_ARN'))
     DB_PASSWORD = json.loads(secret['SecretString'])['password']
 
     connection_url = URL.create(
