@@ -24,7 +24,7 @@ SAMPLE_ITEMS = [
 
 
 # ─── SNS publishing ───────────────────────────────────────────────────────────
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_create_order_publishes_sns_message_with_correct_event_type(client, sns_mock):
     # Act
     client.post("/orders/", json={"user_id": 1})
@@ -34,7 +34,7 @@ def test_create_order_publishes_sns_message_with_correct_event_type(client, sns_
     assert message["event_type"] == "order.placed"
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_create_order_sns_payload_matches_response(client, sns_mock):
     # Act
     response = client.post("/orders/", json={"user_id": 42})
@@ -46,7 +46,7 @@ def test_create_order_sns_payload_matches_response(client, sns_mock):
     assert message["payload"]["id"] == body["id"]
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_create_order_missing_user_id_does_not_publish_sns(client, sns_mock):
     # Act
     client.post("/orders/", json={})
@@ -58,7 +58,7 @@ def test_create_order_missing_user_id_does_not_publish_sns(client, sns_mock):
     assert "Messages" not in sqs_resp
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_create_order_with_items_sns_payload_includes_items(client, sns_mock):
     # Act
     client.post("/orders/", json={"user_id": 1, "items": SAMPLE_ITEMS})

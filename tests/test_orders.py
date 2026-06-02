@@ -1,20 +1,17 @@
 import json
-import pytest
+
+SAMPLE_ITEMS = [
+    {"product_id": "P001", "product_name": "Test Widget", "product_price": 9.99, "quantity": 2},
+    {"product_id": "P002", "product_name": "Test Gadget", "product_price": 4.49, "quantity": 3},
+]
 from app.db import db
 from app.models.order import Order
 from app.models.line_item import LineItem
 
-SAMPLE_ITEMS = [
-    {"product_id": "P001", "product_name": "Test Widget",
-        "product_price": 9.99, "quantity": 2},
-    {"product_id": "P002", "product_name": "Test Gadget",
-        "product_price": 4.49, "quantity": 3},
-]
 
 # ─── POST /orders/ ────────────────────────────────────────────────────────────
 
-
-def test_create_order_returns_201_and_persists(client):
+def test_create_order_returns_201_and_persists(client, sns_mock):
     # Act
     response = client.post("/orders/", json={"user_id": 1})
     order_id = response.get_json()["id"]
@@ -26,7 +23,7 @@ def test_create_order_returns_201_and_persists(client):
     assert order.user_id == 1
 
 
-def test_create_order_returns_correct_response_body(client):
+def test_create_order_returns_correct_response_body(client, sns_mock):
     # Act
     response = client.post("/orders/", json={"user_id": 42})
     body = response.get_json()
@@ -37,7 +34,7 @@ def test_create_order_returns_correct_response_body(client):
     assert body["items"] == []
 
 
-def test_create_order_missing_user_id_returns_400(client):
+def test_create_order_missing_user_id_returns_400(client, sns_mock):
     # Act
     response = client.post("/orders/", json={})
 
@@ -45,22 +42,19 @@ def test_create_order_missing_user_id_returns_400(client):
     assert response.status_code == 400
 
 
-def test_create_order_with_items_returns_201_and_persists(client):
+def test_create_order_with_items_returns_201_and_persists(client, sns_mock):
     # Act
-    response = client.post(
-        "/orders/", json={"user_id": 1, "items": SAMPLE_ITEMS})
+    response = client.post("/orders/", json={"user_id": 1, "items": SAMPLE_ITEMS})
     body = response.get_json()
     order = db.session.get(Order, body["id"])
 
     # Assert
     assert response.status_code == 201
     assert len(body["items"]) == 2
-    assert {item["product_name"]
-            for item in body["items"]} == {"Test Widget", "Test Gadget"}
+    assert {item["product_name"] for item in body["items"]} == {"Test Widget", "Test Gadget"}
     assert order is not None
     assert len(order.items) == 2
-    assert {item.product_name for item in order.items} == {
-        "Test Widget", "Test Gadget"}
+    assert {item.product_name for item in order.items} == {"Test Widget", "Test Gadget"}
 
 
 # ─── GET /orders/ ─────────────────────────────────────────────────────────────
@@ -89,7 +83,6 @@ def test_get_all_orders_returns_correct_data(client, two_orders_with_items):
 
     # Assert
     assert {o["user_id"] for o in body} == {1, 2}
-
 
 # ─── GET /orders/?user_id=<id> ────────────────────────────────────────────────
 
@@ -136,6 +129,7 @@ def test_get_orders_by_user_id_returns_all_orders_for_that_user(client, app):
     # Assert
     assert len(body) == 2
     assert all(order["user_id"] == 5 for order in body)
+
 
 
 # ─── GET /orders/<id> ─────────────────────────────────────────────────────────

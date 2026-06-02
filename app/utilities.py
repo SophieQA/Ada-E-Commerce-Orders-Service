@@ -1,3 +1,6 @@
+import os
+import json
+import boto3
 from .db import db
 from .models.line_item import LineItem
 
@@ -15,23 +18,6 @@ def validate_model(cls, id):
         raise LookupError(f"{cls.__name__} with id ({id}) not found.")
 
     return model
-
-
-def create_order(cls, model_data):
-    new_order = cls.from_dict(model_data)
-    line_items = []
-
-    for item in model_data.get("items", []):
-        item["order_id"] = new_order.id
-        line_item = LineItem.from_dict(item)
-        line_items.append(line_item)
-
-    new_order.items = line_items
-
-    db.session.add(new_order)
-    db.session.commit()
-
-    return new_order
 
 
 def get_models_with_filters(cls, filters=None):
@@ -55,3 +41,33 @@ def update_model(obj, data):
             setattr(obj, attr, value)
 
     db.session.commit()
+
+def create_order(cls, model_data):
+    sns = boto3.resource('sns')
+    order_placed_topic = sns.Topic(os.environ.get("ARN"))
+
+    new_order = cls.from_dict(model_data)
+    line_items = []
+
+    for item in model_data.get("items", []):
+        item["order_id"] = new_order.id
+        line_item = LineItem.from_dict(item)
+        line_items.append(line_item)
+
+    new_order.items = line_items
+
+    db.session.add(new_order)
+    db.session.commit()
+
+    message = {
+        "event_type": "order.placed",
+        "payload": new_order.to_dict()
+    }
+
+    order_placed_topic.publish(
+        Message=json.dumps(message),
+        MessageGroupId="orders",
+        MessageDeduplicationId=str(new_order.id)
+    )
+
+    return new_order
