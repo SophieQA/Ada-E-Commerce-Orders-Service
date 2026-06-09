@@ -1,3 +1,6 @@
+import os
+import json
+import boto3
 from .db import db
 from .models.line_item import LineItem
 
@@ -18,6 +21,9 @@ def validate_model(cls, id):
 
 
 def create_order(cls, model_data):
+    sns = boto3.resource('sns',region_name="us-east-1")
+    order_placed_topic = sns.Topic(os.environ.get("ARN"))
+
     new_order = cls.from_dict(model_data)
     line_items = []
 
@@ -31,6 +37,17 @@ def create_order(cls, model_data):
     db.session.add(new_order)
     db.session.commit()
 
+    message = {
+        "event_type": "order.placed",
+        "payload": new_order.to_dict()
+    }
+
+    order_placed_topic.publish(
+        Message=json.dumps(message),
+        MessageGroupId="orders",
+        MessageDeduplicationId=str(new_order.id)
+    )
+    
     return new_order
 
 
