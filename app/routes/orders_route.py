@@ -66,6 +66,7 @@ def delete_order(id):
 
 @bp.get('/health')
 def health():
-    return {
-        "status": "healthy"
-    }
+    # return {
+    #     "status": "healthy"
+    # }
+    return {'status': 'healthy', 'version': '1.0.1'}, 200
